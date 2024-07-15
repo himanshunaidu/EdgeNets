@@ -1,6 +1,7 @@
 import torch
 import glob
 import os
+import numpy as np
 from argparse import ArgumentParser
 from PIL import Image
 from torchvision.transforms import functional as F
@@ -10,35 +11,25 @@ from transforms.classification.data_transforms import MEAN, STD
 from utilities.utils import model_parameters, compute_flops
 import coremltools as ct
 
-# Define your model class
-class MyModel(torch.nn.Module):
-    def __init__(self):
-        super(MyModel, self).__init__()
-        # define your layers here
+# # Load the model and its weights
+# model = MyModel()
+# model.load_state_dict(torch.load('path_to_your_model.pth'))
 
-    def forward(self, x):
-        # define forward pass here
-        return x
 
-# Load the model and its weights
-model = MyModel()
-model.load_state_dict(torch.load('path_to_your_model.pth'))
-model.eval()
+# # Example input to use for tracing
+# example_input = torch.rand(1, 3, 224, 224)  # Adjust the input shape as per your model
 
-# Example input to use for tracing
-example_input = torch.rand(1, 3, 224, 224)  # Adjust the input shape as per your model
+# # Convert the model to TorchScript
+# traced_model = torch.jit.trace(model, example_input)
 
-# Convert the model to TorchScript
-traced_model = torch.jit.trace(model, example_input)
+# # Convert the TorchScript model to Core ML
+# mlmodel = ct.convert(
+#     traced_model,
+#     inputs=[ct.TensorType(shape=example_input.shape)],
+# )
 
-# Convert the TorchScript model to Core ML
-mlmodel = ct.convert(
-    traced_model,
-    inputs=[ct.TensorType(shape=example_input.shape)],
-)
-
-# Save the Core ML model
-mlmodel.save('path_to_save_your_model.mlmodel')
+# # Save the Core ML model
+# mlmodel.save('path_to_save_your_model.mlmodel')
 
 
 def relabel(img):
@@ -78,6 +69,7 @@ def data_transform(img, im_size):
 
 def evaluate(args, model, image_list, device):
     im_size = tuple(args.im_size)
+    print(im_size)
 
     # get color map for pascal dataset
     if args.dataset == 'pascal':
@@ -90,14 +82,31 @@ def evaluate(args, model, image_list, device):
     for i, imgName in tqdm(enumerate(image_list)):
         img = Image.open(imgName).convert('RGB')
         w, h = img.size
+        print(f'w: {w}, h: {h}')
 
         img = data_transform(img, im_size)
+        print(f'Data transform {img.shape}')
         img = img.unsqueeze(0)  # add a batch dimension
+        print(f'Unsqueeze {img.shape}')
         img = img.to(device)
         img_out = model(img)
+        print(f'Model {img_out.shape}')
         img_out = img_out.squeeze(0)  # remove the batch dimension
+        print(f'Squeeze {img_out.shape}')
         img_out = img_out.max(0)[1].byte()  # get the label map
+        print(f'Max {img_out.shape}')
         img_out = img_out.to(device='cpu').numpy()
+        print(img.shape, img_out.shape)
+
+        # Prints
+        # w: 2048, h: 1024
+        # Data transform torch.Size([3, 256, 512])
+        # Unsqueeze torch.Size([1, 3, 256, 512])
+        # Model torch.Size([1, 20, 256, 512])
+        # Squeeze torch.Size([20, 256, 512])
+        # Max torch.Size([256, 512])
+        # torch.Size([1, 3, 256, 512]) (256, 512)
+        return
 
         if args.dataset == 'city':
             # cityscape uses different IDs for training and testing
@@ -118,7 +127,28 @@ def evaluate(args, model, image_list, device):
         name = '{}/{}'.format(args.savedir, name.replace(img_extn, 'png'))
         img_out.save(name)
 
+def convert_to_coreml(model, args, device):
+    im_size = tuple(args.im_size)
+    example_input = Image.new('RGB', im_size)  #np.random.rand(im_size[0], im_size[1], 3)
+    # print(example_input.size)
+    # img = example_input.convert('RGB')
+    img = data_transform(example_input, im_size)
+    img = img.unsqueeze(0)  # add a batch dimension
+    img = img.to(device)
 
+    model.eval()
+    traced_model = torch.jit.trace(model, img)
+
+    mlmodel = ct.convert(
+        traced_model,
+        inputs=[ct.TensorType(shape=img.shape)],
+    )
+    try:
+        mlmodel.save('{}/{}'.format(args.savedir, 'model.mlmodel'))#'path_to_save_your_model.mlmodel')
+    except Exception as e:
+        print_error_message('Error while saving the model: {}'.format(e))
+        return
+    print_info_message('CoreML model saved successfully in {}'.format(args.savedir))
 
 
 def main(args):
@@ -181,6 +211,7 @@ def main(args):
     model = model.to(device=device)
 
     # evaluate(args, model, image_list, device=device)
+    convert_to_coreml(model, args, device=device)
 
 
 if __name__ == '__main__':
