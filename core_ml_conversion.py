@@ -142,9 +142,11 @@ def convert_to_coreml(model, args, device):
     mlmodel = ct.convert(
         traced_model,
         inputs=[ct.TensorType(shape=img.shape)],
+        convert_to='neuralnetwork',
+        minimum_deployment_target=ct.target.iOS13
     )
     try:
-        mlmodel.save('{}/{}'.format(args.savedir, 'model.mlmodel'))#'path_to_save_your_model.mlmodel')
+        mlmodel.save('{}/{}'.format(args.savedir, 'model.mlpackage'))#'path_to_save_your_model.mlmodel')
     except Exception as e:
         print_error_message('Error while saving the model: {}'.format(e))
         return
