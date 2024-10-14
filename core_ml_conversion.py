@@ -143,7 +143,7 @@ def convert_to_coreml(model, args, device):
         traced_model,
         inputs=[ct.TensorType(shape=img.shape)],
         convert_to='neuralnetwork',
-        minimum_deployment_target=ct.target.iOS13
+        #minimum_deployment_target=ct.target.iOS13
     )
     try:
         mlmodel.save('{}/{}'.format(args.savedir, 'model.mlpackage'))#'path_to_save_your_model.mlmodel')
@@ -177,11 +177,6 @@ def main(args):
                 image_list.append(rgb_img_loc)
     else:
         print_error_message('{} dataset not yet supported'.format(args.dataset))
-    
-    if len(image_list) == 0:
-        print_error_message('No files in directory: {}'.format(image_path))
-
-    print_info_message('# of images for testing: {}'.format(len(image_list)))
     
     if args.model == 'espnetv2':
         from model.segmentation.espnetv2 import espnetv2_seg
