@@ -190,7 +190,8 @@ def espnetv2_seg(args):
         model.base_net.load_state_dict(basenet_dict)
         print_info_message('Pretrained basenet model loaded!!')
     else:
-        print_warning_message('Training from scratch!!')
+        print_warning_message('Training from scratch!!. If you are testing, ignore this message.'
+                              ' For testing, we do not load weights here.')
     return model
 
 if __name__ == "__main__":
