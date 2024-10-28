@@ -159,9 +159,9 @@ class DiCENetSegmentation(nn.Module):
         return F.interpolate(bu_out_128x128, size=x_size, mode='bilinear', align_corners=True) #nn.Upsample(x_size, mode='bilinear', align_corners=True)(bu_out_128x128)
 
 
-def dicenet_seg(args, classes):
+def dicenet_seg(args):
     weights = args.weights
-    model = DiCENetSegmentation(args, classes=classes)
+    model = DiCENetSegmentation(args, classes=args.classes)
     if weights:
         import os
         if os.path.isfile(weights):
