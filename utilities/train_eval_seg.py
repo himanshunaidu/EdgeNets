@@ -10,7 +10,8 @@ from utilities.metrics.segmentation_miou import MIOU
 from utilities.print_utils import *
 from torch.nn.parallel import gather
 
-def train_seg(model, dataset_loader, optimizer, criterion, num_classes, epoch, device='cuda'):
+def train_seg(model, dataset_loader: torch.utils.data.DataLoader, 
+              optimizer, criterion, num_classes, epoch, device='cuda'):
     losses = AverageMeter()
     batch_time = AverageMeter()
     inter_meter = AverageMeter()

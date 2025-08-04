@@ -8,7 +8,7 @@ import os
 
 # The following 2 lines added for temporary fix
 import sys
-sys.path.append('/home/ubuntu/ML/EdgeNets')
+sys.path.append('/home/ubuntu/EdgeNets')
 
 from utilities.print_utils import *
 

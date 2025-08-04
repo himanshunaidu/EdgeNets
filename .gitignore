@@ -4,3 +4,5 @@ __pycache__
 .idea
 
 /vision_datasets
+/results_city_val/
+/results_city_val2/
